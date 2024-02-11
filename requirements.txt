@@ -7,3 +7,4 @@ passlib
 flask_wtf
 flask_sqlalchemy
 pymysql
+flask_migrate

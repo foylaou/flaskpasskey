@@ -76,7 +76,7 @@ def logout():
 
 
 @app.route('/upload', methods=['POST'])
-def upload_file():
+def upload():
     if request.method == 'POST':
         # 检查 CSRF 令牌
         csrf_token = request.form.get('csrf_token')
