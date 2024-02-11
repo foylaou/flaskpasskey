@@ -1,8 +1,6 @@
 # 導入必要的套件
 import os
-import secrets
 import tempfile
-
 import wtforms
 from flask import Flask, render_template, redirect, url_for, flash, request, session
 from flask_login import login_user, current_user, LoginManager, logout_user
@@ -14,8 +12,8 @@ from passlib.hash import pbkdf2_sha256
 from werkzeug.security import generate_password_hash, check_password_hash
 from werkzeug.utils import secure_filename
 from wtforms.validators import InputRequired
-from model import db, User  # 引入 db 實例
-from textfix import *
+from model.connectedb import db, User  # 引入 db 實例
+from model.textfix import *
 
 # 設定應用程式
 app = Flask(__name__)
