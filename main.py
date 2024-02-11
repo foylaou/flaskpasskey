@@ -1,53 +1,51 @@
 # 導入必要的套件
-import codecs
+import os
+import secrets
+import tempfile
+
 import wtforms
-from flask import Flask, render_template, redirect, url_for, flash, request
-from flask_login import login_user, logout_user, current_user, login_required, LoginManager
-from flask_sqlalchemy import SQLAlchemy
+from flask import Flask, render_template, redirect, url_for, flash, request, session
+from flask_login import login_user, current_user, LoginManager, logout_user
+from flask_migrate import Migrate
 from flask_wtf import FlaskForm, CSRFProtect
+from flask_wtf.csrf import generate_csrf
+from flask_wtf.file import FileRequired, FileField
 from passlib.hash import pbkdf2_sha256
 from werkzeug.security import generate_password_hash, check_password_hash
+from werkzeug.utils import secure_filename
 from wtforms.validators import InputRequired
+from model import db, User  # 引入 db 實例
+from textfix import *
+
+
 
 # 設定應用程式
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '1416519848949'  # 確保設置了秘密鑰匙
-
+UPLOAD_FOLDER = tempfile.mkdtemp()
+app.config['UPLOAD_FOLDER'] = UPLOAD_FOLDER
 # 初始化 Flask-Login
 login_manager = LoginManager()
 login_manager.init_app(app)
 csrf = CSRFProtect(app)
-
+# 設定資料庫
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://av2288444:!t0955787053S@foynas.synology.me:3369/web"
+db.init_app(app)
+migrate = Migrate(app, db)
+with app.app_context():
+    db.create_all()
 
 # 定義用戶加載函數
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-
-# 設定應用程式
-
-
-# 設定資料庫
-app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://av2288444:@t0955787053S@<host>/<dbname>"
-
-db = SQLAlchemy(app)
-
-
-# 設定使用者模型
-class User(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    username = db.Column(db.String(80), unique=True, nullable=False)
-    email = db.Column(db.String(120), unique=True, nullable=False)
-    password = db.Column(db.String(120), nullable=False)
-    passkey = db.Column(db.String(120), nullable=False)
-
-
 # 設定登入表單
 class LoginForm(FlaskForm):
     username = wtforms.StringField("使用者名稱", validators=[InputRequired()])
     password = wtforms.PasswordField("密碼", validators=[InputRequired()])
-
+class UploadForm(FlaskForm):
+    file = FileField(validators=[FileRequired()])
 
 # 設定註冊表單
 class RegisterForm(FlaskForm):
@@ -55,46 +53,67 @@ class RegisterForm(FlaskForm):
     email = wtforms.EmailField("電子郵件", validators=[InputRequired()])
     password = wtforms.PasswordField("密碼", validators=[InputRequired()])
 
-
 # 設定登入路由
-@app.route("/")
+@app.route("/", methods=["GET", "POST"])
 def index():
     """
     首頁路由
     如果使用者已登入，則導向首頁
     否則導向登入頁面
     """
+    csrf_token = generate_csrf()
     if current_user.is_authenticated:
-        return render_template("index.html")
+        return render_template('index.html', csrf_token=csrf_token)
     else:
         return redirect(url_for("login"))
 
 
+@app.route('/logout')
+def logout():
+    logout_user()
+    return redirect(url_for('login'))
+@app.route('/upload', methods=['POST'])
+def upload_file():
+    if request.method == 'POST':
+        # 检查 CSRF 令牌
+        csrf_token = request.form.get('csrf_token')
+        if not csrf_token or csrf_token != session.get('csrf_token'):
+            flash('CSRF token mismatch.')
+            return redirect(url_for('index'))
+
+        # 获取上传的文件
+        uploaded_file = request.files['file']
+        if uploaded_file:
+            filename = secure_filename(uploaded_file.filename)
+            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+            uploaded_file.save(file_path)  # 保存文件
+
+            # 调用处理文件的函数
+            processed_text = process_text(file_path)
+            processed_text2 = process_text2(file_path)
+
+            # 渲染结果页面并传递处理后的文本
+            return render_template('result.html', text=processed_text, text2=processed_text2)
+
+    # 如果不是 POST 请求或者上传失败，则重定向到首页
+    return redirect(url_for('index'))
+
 # 設定登入路由
 @app.route("/login", methods=["GET", "POST"])
 def login():
-    """
-    登入路由
-
-    如果使用者已登入，則導向首頁
-    否則顯示登入表單
-    """
     if current_user.is_authenticated:
         return redirect(url_for("index"))
-
     form = LoginForm()
+
     if form.validate_on_submit():
-        """
-        驗證表單資料
-        如果驗證成功，則登入使用者並導向首頁
-        否則顯示錯誤訊息
-        """
         user = User.query.filter_by(username=form.username.data).first()
         if user and check_password_hash(user.password, form.password.data):
             login_user(user)
+            session.permanent = True
             return redirect(url_for("index"))
 
         flash("登入失敗")
+
     return render_template("login.html", form=form)
 
 
@@ -173,4 +192,5 @@ def passkey():
 
 # 啟動應用程式
 if __name__ == "__main__":
+
     app.run(debug=True)
