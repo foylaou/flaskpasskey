@@ -41,11 +41,6 @@ class LoginForm(FlaskForm):
     username = wtforms.StringField("使用者名稱", validators=[InputRequired()])
     password = wtforms.PasswordField("密碼", validators=[InputRequired()])
 
-
-class UploadForm(FlaskForm):
-    file = FileField(validators=[FileRequired()])
-
-
 # 設定註冊表單
 class RegisterForm(FlaskForm):
     username = wtforms.StringField("使用者名稱", validators=[InputRequired()])
@@ -76,11 +71,7 @@ def logout():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    # 检查 CSRF 令牌
-    # csrf_token = request.form.get('csrf_token')
-    # if not csrf_token or csrf_token != session.get('csrf_token'):
-    #     flash('CSRF token mismatch.')
-    #     return redirect(url_for('index'))
+    flash('test')
     # 获取上传的文件
     uploaded_file = request.files['file']
     if uploaded_file is not None:
