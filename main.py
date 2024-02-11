@@ -2,20 +2,37 @@
 import codecs
 import wtforms
 from flask import Flask, render_template, redirect, url_for, flash, request
-from flask_login import login_user, logout_user, current_user, login_required
+from flask_login import login_user, logout_user, current_user, login_required, LoginManager
 from flask_sqlalchemy import SQLAlchemy
-from flask_wtf import FlaskForm
+from flask_wtf import FlaskForm, CSRFProtect
 from passlib.hash import pbkdf2_sha256
 from werkzeug.security import generate_password_hash, check_password_hash
 from wtforms.validators import InputRequired
 
-
 # 設定應用程式
 app = Flask(__name__)
+app.config['SECRET_KEY'] = '1416519848949'  # 確保設置了秘密鑰匙
+
+# 初始化 Flask-Login
+login_manager = LoginManager()
+login_manager.init_app(app)
+csrf = CSRFProtect(app)
+
+
+# 定義用戶加載函數
+@login_manager.user_loader
+def load_user(user_id):
+    return User.query.get(int(user_id))
+
+
+# 設定應用程式
+
 
 # 設定資料庫
-app.config["SQLALCHEMY_DATABASE_URI"] = "sqlite:///database.db"
+app.config["SQLALCHEMY_DATABASE_URI"] = "mysql+pymysql://av2288444:@t0955787053S@<host>/<dbname>"
+
 db = SQLAlchemy(app)
+
 
 # 設定使用者模型
 class User(db.Model):
@@ -25,16 +42,19 @@ class User(db.Model):
     password = db.Column(db.String(120), nullable=False)
     passkey = db.Column(db.String(120), nullable=False)
 
+
 # 設定登入表單
 class LoginForm(FlaskForm):
     username = wtforms.StringField("使用者名稱", validators=[InputRequired()])
     password = wtforms.PasswordField("密碼", validators=[InputRequired()])
+
 
 # 設定註冊表單
 class RegisterForm(FlaskForm):
     username = wtforms.StringField("使用者名稱", validators=[InputRequired()])
     email = wtforms.EmailField("電子郵件", validators=[InputRequired()])
     password = wtforms.PasswordField("密碼", validators=[InputRequired()])
+
 
 # 設定登入路由
 @app.route("/")
@@ -48,6 +68,7 @@ def index():
         return render_template("index.html")
     else:
         return redirect(url_for("login"))
+
 
 # 設定登入路由
 @app.route("/login", methods=["GET", "POST"])
@@ -76,6 +97,7 @@ def login():
         flash("登入失敗")
     return render_template("login.html", form=form)
 
+
 # 設定註冊路由
 @app.route("/register", methods=["GET", "POST"])
 def register():
@@ -95,13 +117,15 @@ def register():
         如果驗證成功，則註冊使用者並導向登入頁面
         否則顯示錯誤訊息
         """
-        user = User(username=form.username.data, email=form.email.data, password=generate_password_hash(form.password.data), passkey=generate_passkey())
+        user = User(username=form.username.data, email=form.email.data,
+                    password=generate_password_hash(form.password.data), passkey=generate_passkey())
         db.session.add(user)
         db.session.commit()
         flash("註冊成功")
         return redirect(url_for("login"))
 
     return render_template("register.html", form=form)
+
 
 # 生成 Passkey
 def generate_passkey():
@@ -112,7 +136,7 @@ def generate_passkey():
     """
     return pbkdf2_sha256.hash("12345")
 
-# 驗證 Passkey
+
 # 驗證 Passkey
 def verify_passkey(passkey, user):
     """
@@ -121,6 +145,7 @@ def verify_passkey(passkey, user):
     使用 pbkdf2_sha256 函數驗證 Passkey
     """
     return pbkdf2_sha256.verify(passkey, user.passkey)
+
 
 # 設定 Passkey 路由
 @app.route("/passkey", methods=["GET", "POST"])
@@ -144,6 +169,7 @@ def passkey():
                 return render_template("passkey.html")
     else:
         return redirect(url_for("login"))
+
 
 # 啟動應用程式
 if __name__ == "__main__":

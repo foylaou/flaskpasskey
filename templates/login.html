@@ -8,7 +8,7 @@
 <body>
     <h1>登入</h1>
     <form action="/login" method="post">
-        {% csrf_token %}
+        {{ form.hidden_tag() }}
         <label for="username">使用者名稱</label>
         <input type="text" id="username" name="username" required>
         <br>
