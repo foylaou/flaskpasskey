@@ -1,7 +1,7 @@
 import os
 import tempfile
 import wtforms
-from flask import Flask, render_template, redirect, url_for, flash, request, session
+from flask import Flask, render_template, redirect, url_for, flash, request, session,send_file
 from flask_login import login_user, current_user, LoginManager, logout_user
 from flask_migrate import Migrate
 from flask_wtf import FlaskForm, CSRFProtect
@@ -36,7 +36,6 @@ with app.app_context():
 def load_user(user_id):
     return User.query.get(int(user_id))
 
-
 # 設定登入表單
 class LoginForm(FlaskForm):
     username = wtforms.StringField("使用者名稱", validators=[InputRequired()])
@@ -55,7 +54,7 @@ class RegisterForm(FlaskForm):
 
 
 # 設定登入路由
-@app.route("/", methods=["GET", "POST"])
+@app.route("/", methods=["GET"])
 def index():
     """
     首頁路由
@@ -77,29 +76,26 @@ def logout():
 
 @app.route('/upload', methods=['POST'])
 def upload():
-    if request.method == 'POST':
-        # 检查 CSRF 令牌
-        csrf_token = request.form.get('csrf_token')
-        if not csrf_token or csrf_token != session.get('csrf_token'):
-            flash('CSRF token mismatch.')
-            return redirect(url_for('index'))
+    # 检查 CSRF 令牌
+    # csrf_token = request.form.get('csrf_token')
+    # if not csrf_token or csrf_token != session.get('csrf_token'):
+    #     flash('CSRF token mismatch.')
+    #     return redirect(url_for('index'))
+    # 获取上传的文件
+    uploaded_file = request.files['file']
+    if uploaded_file is not None:
+        filename = secure_filename(uploaded_file.filename)
+        file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
+        uploaded_file.save(file_path)  # 保存文件
 
-        # 获取上传的文件
-        uploaded_file = request.files['file']
-        if uploaded_file:
-            filename = secure_filename(uploaded_file.filename)
-            file_path = os.path.join(app.config['UPLOAD_FOLDER'], filename)
-            uploaded_file.save(file_path)  # 保存文件
+        # 调用处理文件的函数
+        processed_text = process_text(file_path)
+        processed_text2 = process_text2(file_path)
 
-            # 调用处理文件的函数
-            processed_text = process_text(file_path)
-            processed_text2 = process_text2(file_path)
-
-            # 渲染结果页面并传递处理后的文本
-            return render_template('result.html', text=processed_text, text2=processed_text2)
-
-    # 如果不是 POST 请求或者上传失败，则重定向到首页
-    return redirect(url_for('index'))
+        # 渲染结果页面并传递处理后的文本
+        return render_template('result.html', text=processed_text, text2=processed_text2)
+    else:
+        flash('No file uploaded.')
 
 
 # 設定登入路由
@@ -193,6 +189,35 @@ def passkey():
     else:
         return redirect(url_for("login"))
 
+@app.route('/download')
+def download():
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'btunlock.mobileconfig')
+
+    # 將處理後的文本保存到新的檔
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.write(request.args.get('text', ''))
+
+    # 提供下載連結
+    return send_file(file_path, as_attachment=True)
+
+
+# 處理方式2：在網頁上顯示處理結果
+@app.route('/download2')
+def download2():
+    file_path = os.path.join(app.config['UPLOAD_FOLDER'], 'unlock.mobileconfig')
+
+    # 將處理後的文本保存到新的檔
+    with open(file_path, 'w', encoding='utf-8') as file:
+        file.write(request.args.get('text', ''))
+
+    # 提供下載連結
+    return send_file(file_path, as_attachment=True)
+
+@app.route('/email')
+def email():
+    # 在此處添加發送電子郵件的代碼
+    # 可以使用Python的smtplib庫來發送電子郵件
+    return "處理結果已發送到您的電子郵件。"
 
 # 啟動應用程式
 if __name__ == "__main__":
