@@ -1,4 +1,3 @@
-# 導入必要的套件
 import os
 import tempfile
 import wtforms
