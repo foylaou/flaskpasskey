@@ -17,8 +17,6 @@ from wtforms.validators import InputRequired
 from model import db, User  # 引入 db 實例
 from textfix import *
 
-
-
 # 設定應用程式
 app = Flask(__name__)
 app.config['SECRET_KEY'] = '1416519848949'  # 確保設置了秘密鑰匙
@@ -35,23 +33,29 @@ migrate = Migrate(app, db)
 with app.app_context():
     db.create_all()
 
+
 # 定義用戶加載函數
 @login_manager.user_loader
 def load_user(user_id):
     return User.query.get(int(user_id))
 
+
 # 設定登入表單
 class LoginForm(FlaskForm):
     username = wtforms.StringField("使用者名稱", validators=[InputRequired()])
     password = wtforms.PasswordField("密碼", validators=[InputRequired()])
+
+
 class UploadForm(FlaskForm):
     file = FileField(validators=[FileRequired()])
+
 
 # 設定註冊表單
 class RegisterForm(FlaskForm):
     username = wtforms.StringField("使用者名稱", validators=[InputRequired()])
     email = wtforms.EmailField("電子郵件", validators=[InputRequired()])
     password = wtforms.PasswordField("密碼", validators=[InputRequired()])
+
 
 # 設定登入路由
 @app.route("/", methods=["GET", "POST"])
@@ -72,6 +76,8 @@ def index():
 def logout():
     logout_user()
     return redirect(url_for('login'))
+
+
 @app.route('/upload', methods=['POST'])
 def upload_file():
     if request.method == 'POST':
@@ -97,6 +103,7 @@ def upload_file():
 
     # 如果不是 POST 请求或者上传失败，则重定向到首页
     return redirect(url_for('index'))
+
 
 # 設定登入路由
 @app.route("/login", methods=["GET", "POST"])
@@ -192,5 +199,4 @@ def passkey():
 
 # 啟動應用程式
 if __name__ == "__main__":
-
     app.run(debug=True)

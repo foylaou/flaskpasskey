@@ -6,3 +6,4 @@ flask_login
 passlib
 flask_wtf
 flask_sqlalchemy
+pymysql
