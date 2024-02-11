@@ -1,0 +1,30 @@
+
+
+<!-- index.html -->
+{% extends "base.html" %}
+
+{% block title %}Result{% endblock %}
+
+{% block content %}
+<body class="bg-light">
+    <div class="container py-5">
+        <div class="row justify-content-center">
+            <div class="col-md-6">
+                <div class="text-center mb-4">
+                    <h1 class="h3 mb-3 font-weight-normal">處理完成</h1>
+                    <!-- <pre>{{ text }}</pre> -->
+                    <p>
+                        <a class="btn btn-primary" href="{{ url_for('download', text=text) }}" role="button">下載BT文字檔</a>
+                    </p>
+                    <p>
+                        <a class="btn btn-secondary" href="{{ url_for('download2', text=text2) }}" role="button">下載unlock文字檔</a>
+                    </p>
+                    <!-- <p><a class="btn btn-link" href="{{ url_for('email') }}">將結果發送到您的電子郵件</a></p> -->
+                </div>
+            </div>
+        </div>
+    </div>
+    <!-- Include Bootstrap 5 JS and Popper.js for tooltips -->
+    <script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+</body>
+{% endblock %}
