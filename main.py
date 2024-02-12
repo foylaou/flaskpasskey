@@ -13,6 +13,7 @@ from werkzeug.utils import secure_filename
 from wtforms.validators import InputRequired
 from model.connectedb import db, User  # 引入 db 實例
 from model.textfix import *
+from model.form import *
 
 # 設定應用程式
 app = Flask(__name__)
